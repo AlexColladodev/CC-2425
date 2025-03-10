@@ -1,0 +1,13 @@
+dn: uid=colladoalex,dc=example,dc=org
+cn: colladoalex
+uid: colladoalex
+sn: 3
+objectClass: top
+objectClass: posixAccount
+objectClass: inetOrgPerson
+uidNumber: 501
+gidNumber: 20
+homeDirectory: /home/colladoalex
+loginShell: /bin/bash
+gecos: colladoalex
+userPassword: {crypt}x
