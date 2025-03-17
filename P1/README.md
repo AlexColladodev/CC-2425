@@ -460,6 +460,7 @@ En la pestaña LDAP Configuration Advance, se definen los parámetros esenciales
 Se pueden observar los usuarios que se han autenticado si vamos a la ventana de users:
 
 ![Usuarios](Capturas/UsuariosOwnCloud.png)
+![UsuariosAutenticados](Capturas/UsuariosAutenticados.png)
 
 Y por último, se inicia sesión con uno de los usuarios y subimos un archivo comprobando que todo funciona perfectamente:
 
