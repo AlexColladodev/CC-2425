@@ -412,7 +412,7 @@ services:
 ```
 
 Al tener el archivo docker-compose.yml solo haría falta ejecutar el comando:
-``` yaml
+``` bash
 docker-compose up --build -d
 ```
 ## Configuración de Owncloud
@@ -456,3 +456,20 @@ En la pestaña Login Attributes, configuramos cómo ownCloud identifica a los us
 En la pestaña LDAP Configuration Advance, se definen los parámetros esenciales para la integración con OpenLDAP, asegurando que ownCloud pueda autenticar y gestionar usuarios del directorio LDAP:
 
 ![LDAP_Configuration](Capturas/LDAP_Configuration.png)
+
+Se pueden observar los usuarios que se han autenticado si vamos a la ventana de users:
+
+![Usuarios](Capturas/UsuariosOwnCloud.png)
+
+Y por último, se inicia sesión con uno de los usuarios y subimos un archivo comprobando que todo funciona perfectamente:
+
+Antes de eso hay que cambiar la contraseña del usuario manualmente utilizando:
+
+``` bash
+ldappasswd -x -D "cn=admin,dc=example,dc=org" -w admin -H ldap://localhost:20389 -s <contraseña> "uid=<usuario>,dc=example,dc=org"
+```
+
+Y ahora se inicia usando el usuario y contraseña:
+
+![UsuarioRegistrado](Capturas/UsuarioRegistrado.png)
+
