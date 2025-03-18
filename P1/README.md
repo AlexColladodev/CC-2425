@@ -261,6 +261,13 @@ docker pull owncloud
 docker run -d -p 20080:80 owncloud:latest
 ```
 
+Para que exista la persistencia de los datos aunque se elimine el contenedor habrá que crear un directorio y usar un volumen de persistencia que guarde las configuraciones localmente:
+
+``` bash
+mkdir -p /home/alumno/Escritorio/CC/P1/owncloud_data
+docker run -d --name owncloud -p 20080:80  -v /home/alumno/Escritorio/CC/P1/owncloud_data:/var/www/html owncloud:latest
+```
+
 ## Desplegar Flask y Redis
 
 Para el despliegue de los contenedores con el aplicación flask y el servicio de redis se necesitará crear el archivo app.py, el archivo Dockerfile, docker-compose y el requirements.txt para las dependencias necesarias
@@ -365,24 +372,6 @@ services:
       MARIADB_PASSWORD: colladoalex
       MARIADB_ROOT_PASSWORD: colladoalex-root
 
-  owncloud:
-    image: owncloud:latest
-    container_name: owncloud
-    restart: always
-    depends_on:
-      - mariadb
-      - flask_app
-      - redis
-      - openldap-server
-    ports:
-      - "20080:80"
-    environment:
-      OWNCLOUD_DB_TYPE: mysql
-      OWNCLOUD_DB_HOST: mariadb
-      OWNCLOUD_DB_NAME: Practica1
-      OWNCLOUD_DB_USERNAME: colladoalex
-      OWNCLOUD_DB_PASSWORD: colladoalex
-
   openldap:
     image: osixia/openldap:1.5.0
     container_name: openldap-server
@@ -409,6 +398,30 @@ services:
       - redis
     ports:
       - "5000:5000"
+
+  owncloud:
+    image: owncloud:latest
+    container_name: owncloud
+    restart: always
+    depends_on:
+      - mariadb
+      - flask_app
+      - redis
+      - openldap
+    ports:
+      - "20080:80"
+    environment:
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_HOST: mariadb
+      OWNCLOUD_DB_NAME: Practica1
+      OWNCLOUD_DB_USERNAME: colladoalex
+      OWNCLOUD_DB_PASSWORD: colladoalex
+    volumes:
+      - /home/alumno/Escritorio/CC/P1/owncloud_data:/var/www/html
+
+volumes:
+  owncloud_data:
+    driver: local
 ```
 
 Al tener el archivo docker-compose.yml solo haría falta ejecutar el comando:
