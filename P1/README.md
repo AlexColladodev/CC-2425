@@ -1,5 +1,48 @@
 <h1>Práctica 1 - Alexander Collado Rojas</h1>
 
+Se puede encontrar este README.md en: [README](https://github.com/AlexColladodev/CC-2425/tree/main/P1)
+
+# Especificaciones del sistema
+
+Arquitectura: x86_64
+
+Modo de operación: 32-bit, 64-bit
+
+Orden de bytes: Little Endian
+
+Direcciones: 39 bits físicas, 48 bits virtuales
+
+CPU:
+- Modelo: 11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz
+- Núcleos: 2
+- Hilos por núcleo: 1
+- Velocidad: 2687.996 MHz
+- Virtualización: KVM (Kernel-based Virtual Machine)
+
+Caché:
+- L1d: 96 KiB
+- L1i: 64 KiB
+- L2: 2.5 MiB
+- L3: 24 MiB
+
+Memoria RAM: 4 GiB
+
+Disco: 128 GiB (VirtualBox)
+
+- Particiones:
+
+  - /boot: 487 MiB
+
+  - SWAP: 1.9 GiB
+
+  - /: 125.6 GiB
+
+Sistema Operativo: Ubuntu con kernel 5.4.0-208-generic
+
+Interfaz de red: Ethernet VirtualBox, 1Gbit/s
+
+Virtualización: Entorno virtualizado en VirtualBox
+
 # Escenario 1
 
 ## Error en galeon.ugr.es
@@ -637,6 +680,12 @@ Finalmente, se desplegarán dos instancias de OwnCloud, que actuarán como servi
 
 Para este escenario, se han creado nuevos directorios destinados a los volúmenes de persistencia de los contenedores, asegurando la conservación de los datos incluso en caso de reinicio o detención de los servicios.
 
+``` bash
+mkdir owncloud_files
+mkdir owncloud_config
+mkdir owncloud_apps
+```
+
 Se ha definido una red interna llamada owncloud_network utilizando el controlador de red bridge. Esta red permite que los contenedores se comuniquen entre sí sin exponerlos directamente a la red externa.
 
 ![Escenario2_Docker_PS](Capturas/Escenario2_up.png)
@@ -653,6 +702,47 @@ ldapadd -x -D "cn=admin,dc=example,dc=org" -w admin -c -f colladoalexs2.ldif -H 
 ldapadd -x -D "cn=admin,dc=example,dc=org" -w admin -c -f user2s2.ldif -H ldap://localhost:20390
 ```
 
+## Configuración HAProxy
+
+HAProxy distribuye las conexiones entre dos servidores OwnCloud (owncloud1 y owncloud2) usando balanceo de carga round-robin. Si un servidor falla, redirige las peticiones al otro automáticamente
+
+``` cfg
+global
+    log stdout format raw local0
+    maxconn 4096      
+
+defaults
+    log global
+    mode http
+    option httplog
+    timeout connect 10000ms
+    timeout client 60000ms
+    timeout server 60000ms
+
+frontend http_front
+    bind *:80
+    default_backend owncloud_servers
+    option forwardfor except 127.0.0.1
+    http-request set-header X-Forwarded-Proto https
+
+
+backend owncloud_servers
+    balance roundrobin
+    cookie SERVERID insert indirect nocache
+    server owncloud1 owncloud1:80 check cookie oc1
+    server owncloud2 owncloud2:80 check cookie oc2
+
+backend ldap_backend
+    balance roundrobin
+    server ldap1 openldap-server:389 check
+```
+
+Balanceo de carga: Distribuye las peticiones entre owncloud1 y owncloud2 de manera equitativa.
+
+Persistencia de sesión: Se usa una cookie (SERVERID) para mantener la sesión del usuario en el mismo servidor.
+
+Encabezados HTTP: Se configura X-Forwarded-Proto para manejar conexiones HTTPS correctamente.
+
 ## Configuración Owncloud
 
 Como en el escenario 1 se configura nuevamente owncloud:
@@ -661,5 +751,43 @@ Como en el escenario 1 se configura nuevamente owncloud:
 
 Nuevamente se descarga LDAP Integration en la sección de Market de Owncloud y se configura idéntico al escenario 1. Como tenemos el volumen de aplicaciones solo hará falta configurarlo en localhost:21080 o en localhost:21081
 
-## Configuración HAProxy
+Para que OwnCloud funcione correctamente detrás de HAProxy, es necesario modificar el archivo config.php dentro del contenedor de OwnCloud.
 
+Copio el archivo config.php que se genera luego de realizar la configuración por primera vez:
+
+``` bash
+docker cp owncloud1:/var/www/html/config/config.php .
+```
+
+Edito el archivo añadiéndole las siguientes líneas:
+
+``` bash
+'trusted_proxies' => ['haproxy'],
+'overwritehost' => 'localhost:8080',
+'overwriteprotocol' => 'http',
+```
+
+Copio el archivo modificado local en el contenedor:
+
+``` bash
+docker cp config.php owncloud1:/var/www/html/config/config.php
+```
+
+Cambio los permisos del archivo dentro del contenedor porque puede que al copiarlo fuera se hayan modificado:
+
+``` bash
+chown -R www-data:www-data /var/www/html/config
+chmod -R 755 /var/www/html/config
+
+```
+Reinicio los contenedores y listo:
+
+``` bash
+docker restart owncloud1 owncloud2
+```
+
+## Funcionamiento
+
+Y como se puede observar, se accede mediante haproxy usando la dirección localhost:8080:
+
+![Escenario2_FuncionaHAPROX](Capturas/Escenario2-FuncionaHAProxy.png)
