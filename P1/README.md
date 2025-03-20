@@ -313,67 +313,9 @@ mkdir -p /home/alumno/Escritorio/CC/P1/owncloud_data
 docker run -d --name owncloud -p 20080:80  -v /home/alumno/Escritorio/CC/P1/owncloud_data:/var/www/html owncloud:latest
 ```
 
-## Desplegar Flask y Redis
+## Desplegar Redis
 
-Para el despliegue de los contenedores con el aplicación flask y el servicio de redis se necesitará crear el archivo app.py, el archivo Dockerfile, docker-compose y el requirements.txt para las dependencias necesarias
-
-El archivo app.py quedaría tal que:
-
-
-``` python
-from flask import Flask
-import redis
-import os
-import socket
-import time
-
-app = Flask(__name__)
-cache = redis.Redis(host="redis", port=6379)
-
-def get_hit_count():
-    retries = 5
-    while True:
-        try:
-            return cache.incr('hits')
-        except redis.exceptions.ConnectionError as exc:
-            if retries == 0:
-                raise exc
-            retries -= 1
-            time.sleep(0.5)
-
-@app.route("/")
-def hello():
-    count = get_hit_count()
-    return 'Hello World! I have been seen {} time.\n'.format(count)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-
-```
-
-El archivo de requirements.txt:
-```
-flask
-redis
-```
-
-El archivo Dockerfile:
-``` Dockerfile
-FROM python:3.8.10
-
-WORKDIR /app
-
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 5000
-
-CMD ["python", "app.py"]
-```
-
-Y por último el docker-compose.yml:
+Usando docker-compose.yml
 ``` yaml
 version: '3'
 services:
@@ -382,14 +324,6 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-
-  web:
-    build: .
-    container_name: flask_app
-    ports:
-      - "5000:5000"
-    depends_on:
-      - redis
 ```
 
 Con estos archivos, solo quedaría iniciar los contenedores usando el comando:
