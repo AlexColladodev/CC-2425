@@ -1,4 +1,6 @@
-# Práctica 1
+<h1>Práctica 1 - Alexander Collado Rojas</h1>
+
+# Escenario 1
 
 ## Error en galeon.ugr.es
 
@@ -486,4 +488,178 @@ ldappasswd -x -D "cn=admin,dc=example,dc=org" -w admin -H ldap://localhost:20389
 Y ahora se inicia usando el usuario y contraseña:
 
 ![UsuarioRegistrado](Capturas/UsuarioRegistrado.png)
+
+# Escenario 2
+
+## Despliegue de contenedores con docker-compose
+
+En este escenario, se utilizará docker-compose para desplegar todos los servicios necesarios de manera coordinada:
+
+``` yml
+version: '3.8'
+
+services:
+  haproxy:
+    image: haproxy:latest
+    container_name: haproxy
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - owncloud_network
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    depends_on:
+      - owncloud1
+      - owncloud2
+
+  mariadb_principal:
+    image: mariadb:latest
+    container_name: mariadb_principal
+    restart: always
+    ports:
+      - "3307:3306"
+    networks:
+      - owncloud_network
+    volumes:
+      - /home/alumno/Escritorio/CC/P1_2/MariaDB_data:/var/lib/mysql
+    environment:
+      MARIADB_REPLICATION_MODE: master
+      MARIADB_ROOT_PASSWORD: colladoalex-root
+      MARIADB_DATABASE: Practica1_2
+      MARIADB_USER: colladoalex
+      MARIADB_PASSWORD: colladoalex
+
+  mariadb_replica:
+    image: mariadb:latest
+    container_name: mariadb_replica
+    restart: always
+    ports:
+      - "3308:3306"
+    networks:
+      - owncloud_network
+    environment:
+      MARIADB_REPLICATION_MODE: slave
+      MARIADB_ROOT_PASSWORD: colladoalex-root
+      MARIADB_MASTER_HOST: mariadb_principal
+      MARIADB_MASTER_USER: colladoalex
+      MARIADB_MASTER_PASSWORD: colladoalex
+      MARIADB_REPLICATION_USER: colladoalex
+      MARIADB_REPLICATION_PASSWORD: colladoalex
+
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap-server
+    restart: always
+    ports:
+      - "20390:389"
+      - "20637:636"
+    networks:
+      - owncloud_network
+    volumes:
+      - /home/alumno/Escritorio/CC/P1_2/data/slapd/database:/var/lib/ldap
+      - /home/alumno/Escritorio/CC/P1_2/data/slapd/config:/etc/ldap/slapd.d
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    networks:
+      - owncloud_network
+    ports:
+      - "6380:6379"
+
+  owncloud1:
+    image: owncloud:latest
+    container_name: owncloud1
+    restart: always
+    networks:
+      - owncloud_network
+    depends_on:
+      - mariadb_principal
+      - redis
+      - openldap
+    ports:
+      - "21080:80"
+    environment:
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_HOST: mariadb_principal
+      OWNCLOUD_DB_NAME: Practica1_2
+      OWNCLOUD_DB_USERNAME: colladoalex
+      OWNCLOUD_DB_PASSWORD: colladoalex
+    volumes:
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_files:/var/www/html/data
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_config:/var/www/html/config
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_apps:/var/www/html/apps
+
+  owncloud2:
+    image: owncloud:latest
+    container_name: owncloud2
+    restart: always
+    networks:
+      - owncloud_network
+    depends_on:
+      - mariadb_principal
+      - redis
+      - openldap
+    ports:
+      - "21081:80"
+    environment:
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_HOST: mariadb_principal
+      OWNCLOUD_DB_NAME: Practica1_2
+      OWNCLOUD_DB_USERNAME: colladoalex
+      OWNCLOUD_DB_PASSWORD: colladoalex
+    volumes:
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_files:/var/www/html/data
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_config:/var/www/html/config
+      - /home/alumno/Escritorio/CC/P1_2/owncloud_apps:/var/www/html/apps
+
+networks:
+  owncloud_network:
+    driver: bridge
+```
+
+Para ello, se configurará un contenedor con HAProxy, que se encargará del balanceo de carga. Este servicio mapeará el puerto 8080 en el host al puerto 80 dentro del contenedor y estará conectado a la red de contenedores owncloud_network con todos los demás contenedores.
+
+Se desplegará un contenedor con la base de datos principal, idéntico al del Escenario 1, pero con un mapeo de puertos distinto. Esto asegurará que, en caso de que ambos escenarios estén activos al mismo tiempo, no haya conflictos de conexión.
+
+Además, se añadirá un contenedor con la réplica de la base de datos, el cual actuará en modo secundario. Para su configuración, se definirán las siguientes variables de entorno:
+- MARIADB_MASTER_HOST para especificar la dirección del host maestro de la base de datos.
+- MARIADB_REPLICATION_MODE para establecer el modo de replicación.
+- MARIADB_REPLICATION_USER y MARIADB_REPLICATION_PASSWORD para gestionar la autenticación de la replicación.
+
+Para la autenticación de usuarios, se incluirá un contenedor con OpenLDAP, configurado de manera similar al Escenario 1, pero con un mapeo de puertos diferente para evitar conflictos.
+
+También se lanzará un contenedor con Redis, utilizado para la gestión de caché. Como en los otros servicios, el mapeo de puertos será ajustado para evitar interferencias con el primer escenario.
+
+Finalmente, se desplegarán dos instancias de OwnCloud, que actuarán como servicios web. Ambos contenedores compartirán la misma información. Para ello hay que indicarle en los volúmenes de persistencia que apunten al mismo archivo de configuración. De tal forma que al configurar uno se configura el otro automáticamente. Esto pasa igual con los archivos de apps (para LDAP Integration)
+
+Para este escenario, se han creado nuevos directorios destinados a los volúmenes de persistencia de los contenedores, asegurando la conservación de los datos incluso en caso de reinicio o detención de los servicios.
+
+Se ha definido una red interna llamada owncloud_network utilizando el controlador de red bridge. Esta red permite que los contenedores se comuniquen entre sí sin exponerlos directamente a la red externa.
+
+![Escenario2_Docker_PS](Capturas/Escenario2_up.png)
+
+## Creación usuarios OpenLDAP
+
+Tal como en el Escenario 1, se crearán dos usuarios mediante archivos `.ldif`, manteniendo la misma estructura utilizada anteriormente. La única diferencia será en la nomenclatura de los usuarios, que tendrán nombres distintos para diferenciarlos entre escenarios.  
+
+En este caso, se han creado los usuarios `user2s2` y `colladoalexs2`.  
+
+``` bash
+#Comprobar el puerto. Para el escenario 2 se cambió a 20390 en vez de 20389 del escenario 1
+ldapadd -x -D "cn=admin,dc=example,dc=org" -w admin -c -f colladoalexs2.ldif -H ldap://localhost:20390
+ldapadd -x -D "cn=admin,dc=example,dc=org" -w admin -c -f user2s2.ldif -H ldap://localhost:20390
+```
+
+## Configuración Owncloud
+
+Como en el escenario 1 se configura nuevamente owncloud:
+
+![Escenario2_Config_Owncloud](Capturas/Escenario2_ConfiguracionInicialOwnCloud.png)
+
+Nuevamente se descarga LDAP Integration en la sección de Market de Owncloud y se configura idéntico al escenario 1. Como tenemos el volumen de aplicaciones solo hará falta configurarlo en localhost:21080 o en localhost:21081
+
+## Configuración HAProxy
 
