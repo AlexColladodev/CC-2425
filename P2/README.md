@@ -230,3 +230,5 @@ curl -X POST http://localhost:8080/function/face-detect \
 
 base64 -d result.b64 > result.jpg
 ```
+
+![ResultadoFinal](Capturas/Resultado.png)
