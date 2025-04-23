@@ -125,7 +125,7 @@ Al ingresar, se solicitarán credenciales de acceso. Tal como se indica, el nomb
 kubectl get secret -n openfaas basic-auth -o jsonpath="{.data.basic-auth-password}" | base64 --decode; echo
 ```
 
-## Creación de funciones FaaS para reconocimiento facial
+## Creación de función para reconocimiento facial
 
 Antes de comenzar con el desarrollo de la funcionalidad, se descargará una plantilla específica para funciones en Python que permita realizar peticiones HTTP. Para ello, se utilizará la plantilla python3-http, recomendada en el catálogo.
 
