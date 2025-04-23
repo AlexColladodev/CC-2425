@@ -1,6 +1,4 @@
-# Práctica 2
-
-<h1>Práctica 1 - Alexander Collado Rojas</h1>
+<h1>Práctica 2 - Alexander Collado Rojas</h1>
 
 Se puede encontrar este README.md en: [README](https://github.com/AlexColladodev/CC-2425/tree/main/P2)
 
