@@ -16,7 +16,6 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-a
 Además, se descargará e instalará kubectl con:
 ``` bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-
 install kubectl ~/.local/bin/kubectl && rm kubectl
 ```
 
@@ -129,7 +128,6 @@ import json
 
 def handle(event, context):
     try:
-        # Mostrar el cuerpo recibido
         print("Raw event body:")
         print(event.body)
 
@@ -177,6 +175,8 @@ def handle(event, context):
     except Exception as e:
         return f"Unhandled error: {str(e)}", 500
 ```
+
+Mi archivo handler.py conserva la funcionalidad principal indicada en el guión de la práctica (recibir una URL de imagen, detectar rostros y devolver la imagen resultante en base64), pero incorpora mejoras importantes que lo hacen más fácil de depurar. A diferencia del original, incluye validaciones adicionales como la verificación del tipo de datos recibidos, control detallado de errores al descargar la imagen (por ejemplo, si falla la conexión o la URL no es válida), e impresión de mensajes útiles en los logs para saber qué datos se están procesando. También maneja errores de formato JSON y cualquier excepción inesperada de forma controlada, devolviendo mensajes claros y códigos de error apropiados.
 
 Y se definirá el archivo requirements.txt con las dependencias necesarias:
 
