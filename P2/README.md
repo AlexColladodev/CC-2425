@@ -1,5 +1,50 @@
 # Práctica 2
 
+<h1>Práctica 1 - Alexander Collado Rojas</h1>
+
+Se puede encontrar este README.md en: [README](https://github.com/AlexColladodev/CC-2425/tree/main/P2)
+
+# Especificaciones del sistema
+
+Arquitectura: x86_64
+
+Modo de operación: 32-bit, 64-bit
+
+Orden de bytes: Little Endian
+
+Direcciones: 39 bits físicas, 48 bits virtuales
+
+CPU:
+- Modelo: 11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz
+- Núcleos: 2
+- Hilos por núcleo: 1
+- Velocidad: 2687.996 MHz
+- Virtualización: KVM (Kernel-based Virtual Machine)
+
+Caché:
+- L1d: 96 KiB
+- L1i: 64 KiB
+- L2: 2.5 MiB
+- L3: 24 MiB
+
+Memoria RAM: 4 GiB
+
+Disco: 128 GiB (VirtualBox)
+
+- Particiones:
+
+  - /boot: 487 MiB
+
+  - SWAP: 1.9 GiB
+
+  - /: 125.6 GiB
+
+Sistema Operativo: Ubuntu con kernel 5.4.0-208-generic
+
+Interfaz de red: Ethernet VirtualBox, 1Gbit/s
+
+Virtualización: Entorno virtualizado en VirtualBox
+
 ## Instalación de Minikube
 
 Para llevar a cabo la instalación de MiniKube, se seguirá el procedimiento descrito en el guión de la sesión 4. Como se indica en el guión, es necesario tener instalado previamente con Docker, kubectl y minikube instalados en el sistema.
@@ -232,3 +277,29 @@ base64 -d result.b64 > result.jpg
 ```
 
 ![ResultadoFinal](Capturas/Resultado.png)
+
+## Entrega realizada
+
+La entrega de esta práctica se ha organizado en un único directorio comprimido que contiene los siguientes elementos:
+
+`script.sh`  
+Script que incluye todos los comandos necesarios para desplegar la función `face-detect` en OpenFaaS. Permite replicar todo el proceso de instalación, construcción, subida y despliegue.
+
+`capturas/`  
+Carpeta con capturas de pantalla tomadas durante la realización de la práctica.
+
+`ColladoRojasAlexander_archivos/`  
+Directorio principal que contiene todos los archivos utilizados y generados durante el desarrollo de la práctica. Incluye:
+
+- `face-detect/`: Carpeta con la función implementada, que contiene:
+  - `handler.py`: Código de la función que realiza detección de rostros sobre una imagen recibida por URL.
+  - `requirements.txt`: Archivo con las dependencias necesarias (`opencv-python`, `numpy`, `requests`).
+
+- `stack.yaml`: Archivo de configuración que define los parámetros de la función, incluyendo:
+  - La plantilla base (`python3-http-debian`)
+  - El nombre de la imagen a desplegar en Docker Hub
+  - Los paquetes adicionales necesarios (`libgl1-mesa-glx`, `libglib2.0-0`, `curl`) para garantizar el correcto funcionamiento de OpenCV.
+
+`README.md`  
+Este documento actúa como memoria de la práctica
+
